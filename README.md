@@ -13,7 +13,7 @@ Opportunity Journey is the first module in the Visual Graphs collection. It rend
 
 ## Screenshot
 
-> <img width="1450" height="2074" alt="Express Logistics SLA _ Opportunity _ Salesforce (24 01 2026 21_58)" src="https://github.com/user-attachments/assets/9f772b06-738f-4c0e-ad8a-345a7f72f725" />
+> <img width="1450" height="1993" alt="image" src="https://github.com/user-attachments/assets/978bc520-878d-49a1-9edf-e00d95324d3c" />
 
 
 ## Components
