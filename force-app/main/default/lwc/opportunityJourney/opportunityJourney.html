@@ -1,0 +1,220 @@
+<template>
+  <section class="journey-shell">
+    <template if:true={isLoading}>
+      <div class="state-card">
+        <lightning-spinner alternative-text="Loading opportunity journey" size="medium"></lightning-spinner>
+        <p class="state-body">Loading opportunity journey...</p>
+      </div>
+    </template>
+
+    <template if:true={errorMessage}>
+      <div class="state-card state-card--error">
+        <div class="state-title">We couldn't load this journey</div>
+        <p class="state-body">{errorMessage}</p>
+      </div>
+    </template>
+
+    <template if:true={showEmptyState}>
+      <div class="state-card">
+        <div class="state-title">Select an Opportunity record</div>
+        <p class="state-body">Add this component to an Opportunity record page to see the journey.</p>
+      </div>
+    </template>
+
+    <template if:true={hasRecord}>
+      <header class="hero">
+        <div class="hero__left">
+          <div class="record-eyebrow">Opportunity Journey</div>
+          <h1 class="record-title">{record.name}</h1>
+          <div class="meta-row">
+            <span class={stagePillClass}>{record.stage}</span>
+            <span class="meta">Owner: {record.owner}</span>
+            <span class="meta">Account: {record.account}</span>
+            <span class="meta">Territory: {record.territory}</span>
+          </div>
+          <div class="pulse-row">
+            <div class="pulse">
+              <div class="pulse__label">Deal pulse</div>
+              <div class="pulse__value">{record.health}</div>
+            </div>
+            <div class="pulse">
+              <div class="pulse__label">Last activity</div>
+              <div class="pulse__value">{record.lastActivity}</div>
+            </div>
+            <div class="pulse">
+              <div class="pulse__label">Next step</div>
+              <div class="pulse__value">{record.nextStep}</div>
+            </div>
+          </div>
+        </div>
+        <div class="hero__right">
+          <div class="metric">
+            <div class="metric__label">Amount</div>
+            <div class="metric__value">{record.amount}</div>
+          </div>
+          <div class="metric">
+            <div class="metric__label">Close date</div>
+            <div class="metric__value">{record.closeDate}</div>
+          </div>
+          <div class="metric">
+            <div class="metric__label">Probability</div>
+            <div class="metric__value">{record.probability}%</div>
+          </div>
+        <div class="stage-bar">
+            <div class="stage-bar__fill"></div>
+            <div class="stage-bar__label">Pipeline confidence</div>
+          </div>
+        </div>
+      </header>
+
+      <section class="signal-grid">
+        <div class="signal-card">
+          <div class="signal-card__title">Stakeholders</div>
+          <div class="signal-card__value">{record.stakeholders}</div>
+          <template if:true={hasContacts}>
+            <ul class="contact-list contact-list--tight">
+              <template for:each={contacts} for:item="contact">
+                <li key={contact.name} class="contact-row contact-row--tight">
+                  <span class="contact-name">{contact.name}</span>
+                  <span class="contact-role contact-role--inline">
+                    {contact.role}
+                    <template if:true={contact.isPrimary}>
+                      <span class="contact-primary contact-primary--inline" title="Primary contact">★</span>
+                    </template>
+                  </span>
+                </li>
+              </template>
+            </ul>
+          </template>
+          <template if:false={hasContacts}>
+            <p class="signal-card__detail signal-card__detail--muted">No contact roles on this opportunity yet.</p>
+          </template>
+        </div>
+        <div class="signal-card">
+          <div class="signal-card__title">Open items</div>
+          <div class="signal-card__value signal-card__value--compact">{record.openItems}</div>
+          <ul class="open-items-list">
+            <template for:each={openItemsParts} for:item="part">
+              <li key={part} class="open-items-list__item">{part}</li>
+            </template>
+          </ul>
+        </div>
+      </section>
+
+      <section class="products-card">
+        <div class="products-header">
+          <div>
+            <div class="products-title">Products</div>
+            <p class="products-subtitle">Line items on this opportunity</p>
+          </div>
+          <div class="products-count">{products.length}</div>
+        </div>
+        <template if:true={hasProducts}>
+          <div class="products-table">
+            <div class="products-row products-row--header">
+              <span>Product</span>
+              <span>Qty</span>
+              <span>Unit</span>
+              <span>Total</span>
+            </div>
+            <template for:each={products} for:item="product">
+              <div key={product.name} class="products-row">
+                <span class="products-name">{product.name}</span>
+                <span>{product.quantity}</span>
+                <span>{product.unitPrice}</span>
+                <span class="products-total">{product.totalPrice}</span>
+              </div>
+            </template>
+          </div>
+        </template>
+        <template if:false={hasProducts}>
+          <p class="products-empty">No products added yet.</p>
+        </template>
+      </section>
+
+      <section class="timeline">
+        <div class="timeline__rail"></div>
+        <template if:true={hasTimeline}>
+          <template for:each={events} for:item="event">
+            <article key={event.id} class={event.className}>
+              <div class="event__dot"></div>
+              <div class="event__content">
+                <div class="event__header">
+                <div class="event__title">
+                  <lightning-icon icon-name={event.iconName} size="small" class="event__icon"></lightning-icon>
+                  <span>{event.title}</span>
+                </div>
+                <div class="event__meta">
+                  <span class="event__time">{event.timeLabel}</span>
+                  <span class="event__actor">by {event.actor}</span>
+                </div>
+                </div>
+
+                <template if:true={event.isCreation}>
+                  <p class="event__text">{event.details}</p>
+                  <div class="chip-row">
+                    <template for:each={event.chips} for:item="chip">
+                      <span key={chip} class="chip">{chip}</span>
+                    </template>
+                  </div>
+                </template>
+
+                <template if:true={event.isStage}>
+                  <div class="stage-shift">
+                    <div class="stage-shift__from">{event.fromStage}</div>
+                    <div class="stage-shift__arrow"></div>
+                    <div class="stage-shift__to">{event.toStage}</div>
+                    <div class="stage-shift__meta">Probability to {event.probability}%</div>
+                  </div>
+                  <p class="event__text">{event.reason}</p>
+                </template>
+
+                <template if:true={event.isField}>
+                  <ul class="change-list">
+                    <template for:each={event.changes} for:item="change">
+                      <li key={change.field} class="change-item">
+                        <span class="change-item__field">{change.field}</span>
+                        <span class="change-item__from">{change.fromValue}</span>
+                        <span class="change-item__arrow"></span>
+                        <span class="change-item__to">{change.toValue}</span>
+                      </li>
+                    </template>
+                  </ul>
+                </template>
+
+                <template if:true={event.isEmail}>
+                  <div class="email-thread">
+                    <div class="email-thread__subject">{event.subject}</div>
+                    <div class="email-thread__meta">{event.participants}</div>
+                    <template for:each={event.thread} for:item="email">
+                      <div key={email.id} class="email-bubble">
+                        <div class="email-bubble__header">
+                          <span class="email-bubble__from">{email.fromName}</span>
+                          <span class="email-bubble__time">{email.timeLabel}</span>
+                        </div>
+                        <p class="email-bubble__text">{email.snippet}</p>
+                      </div>
+                    </template>
+                  </div>
+                </template>
+
+                <template if:true={event.isNote}>
+                  <div class="note-block">
+                    <p class="note-block__text">{event.note}</p>
+                    <div class="note-block__owner">{event.owner}</div>
+                  </div>
+                </template>
+              </div>
+            </article>
+          </template>
+        </template>
+        <template if:false={hasTimeline}>
+          <div class="state-card state-card--inline">
+            <div class="state-title">No timeline activity yet</div>
+            <p class="state-body">Log emails, stage updates, and field changes to build the journey.</p>
+          </div>
+        </template>
+      </section>
+    </template>
+  </section>
+</template>
