@@ -149,6 +149,47 @@
   align-items: end;
 }
 
+.scope-row {
+  margin-top: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.scope-row__label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #486372;
+  font-weight: 700;
+}
+
+.scope-toggle {
+  display: inline-grid;
+  grid-auto-flow: column;
+  gap: 0.35rem;
+  padding: 0.26rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.74);
+  border: 1px solid rgba(85, 118, 134, 0.2);
+}
+
+.scope-button {
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #295064;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.34rem 0.62rem;
+  cursor: pointer;
+}
+
+.scope-button--active {
+  background: linear-gradient(120deg, #d6f3ff, #b5e9ff);
+  color: #0d3e54;
+}
+
 .toolbar__search,
 .toolbar__size {
   background: transparent;
@@ -237,10 +278,6 @@
   color: var(--tone-muted);
 }
 
-.user-line--support {
-  margin-top: 0.2rem;
-}
-
 .setup-link {
   color: #135f78;
   text-decoration: none;
@@ -306,6 +343,15 @@
   border: 1px solid #c8e7fb;
 }
 
+.path-pill--link {
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.path-pill--link:hover {
+  text-decoration: underline;
+}
+
 .state-card {
   margin-top: 0.8rem;
   border-radius: 14px;
@@ -343,6 +389,10 @@
   .toolbar {
     grid-template-columns: 1fr;
     align-items: stretch;
+  }
+
+  .scope-row {
+    flex-wrap: wrap;
   }
 
   .user-head {

@@ -66,8 +66,27 @@
       <section class="meta-strip">
         <span class="meta-pill">Internal OWD: {response.internalSharingModel}</span>
         <span class="meta-pill">External OWD: {response.externalSharingModel}</span>
-        <span class="meta-pill">Share Object: {response.shareObjectApiName}</span>
+        <span class="meta-pill">Share Object: {shareObjectDisplayLabel}</span>
       </section>
+
+      <template if:true={hasUsers}>
+        <section class="scope-row">
+          <span class="scope-row__label">User Scope</span>
+          <div class="scope-toggle" role="group" aria-label="User scope selector">
+            <template for:each={userScopeButtons} for:item="scope">
+              <button
+                key={scope.value}
+                class={scope.className}
+                data-scope={scope.value}
+                onclick={handleUserScopeChange}
+                type="button"
+              >
+                {scope.label}
+              </button>
+            </template>
+          </div>
+        </section>
+      </template>
 
       <template if:true={hasNotes}>
         <section class="notes">
@@ -128,9 +147,6 @@
                   </p>
                   <p class="user-line">{userRow.roleName}</p>
                   <p class="user-line">{userRow.userType} | Max: {userRow.maxAccessLevel}</p>
-                  <p class="user-line user-line--support">
-                    <a href={permissionSetHomeUrl} class="setup-link" target="_blank">Open Permission Sets</a>
-                  </p>
                 </div>
                 <div class="perm-strip">
                   <template for:each={userRow.permissionBadges} for:item="badge">
@@ -142,7 +158,14 @@
               <div class="path-header">Access Paths ({userRow.pathCount})</div>
               <div class="path-wrap">
                 <template for:each={userRow.accessPaths} for:item="path">
-                  <span key={path} class="path-pill">{path}</span>
+                  <template if:true={path.url}>
+                    <a key={path.key} href={path.url} class="path-pill path-pill--link" target="_blank">
+                      {path.label}
+                    </a>
+                  </template>
+                  <template if:false={path.url}>
+                    <span key={path.key} class="path-pill">{path.label}</span>
+                  </template>
                 </template>
               </div>
             </article>

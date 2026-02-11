@@ -6,6 +6,11 @@ const ACCESS_MODES = [
   { value: 'edit', label: 'Write' },
   { value: 'delete', label: 'Delete' }
 ];
+const USER_SCOPE_MODES = [
+  { value: 'all', label: 'All Users' },
+  { value: 'internal', label: 'Internal' },
+  { value: 'external', label: 'External' }
+];
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 
 const EMPTY_RESPONSE = {
@@ -15,6 +20,7 @@ const EMPTY_RESPONSE = {
   internalSharingModel: '',
   externalSharingModel: '',
   shareObjectApiName: '',
+  shareObjectAvailable: false,
   totalActiveUsers: 0,
   scannedUsers: 0,
   usersWithAccess: 0,
@@ -29,6 +35,7 @@ export default class RecordAccessInspector extends LightningElement {
   @api objectApiName;
 
   selectedMode = 'read';
+  selectedUserScope = 'all';
   searchTerm = '';
   pageSize = 25;
   currentPage = 1;
@@ -77,6 +84,15 @@ export default class RecordAccessInspector extends LightningElement {
     this.currentPage = 1;
   }
 
+  handleUserScopeChange(event) {
+    const nextScope = event.currentTarget.dataset.scope;
+    if (!nextScope || nextScope === this.selectedUserScope) {
+      return;
+    }
+    this.selectedUserScope = nextScope;
+    this.currentPage = 1;
+  }
+
   handleSearchInput(event) {
     this.searchTerm = event.target.value || '';
     this.currentPage = 1;
@@ -112,6 +128,13 @@ export default class RecordAccessInspector extends LightningElement {
     });
   }
 
+  get userScopeButtons() {
+    return USER_SCOPE_MODES.map((scope) => ({
+      ...scope,
+      className: `scope-button${scope.value === this.selectedUserScope ? ' scope-button--active' : ''}`
+    }));
+  }
+
   get accessModeLabel() {
     if (this.selectedMode === 'edit') {
       return 'Write';
@@ -141,9 +164,14 @@ export default class RecordAccessInspector extends LightningElement {
 
     return this.response.users.map((userRow) => {
       const userName = userRow.userName || 'Unknown User';
+      const accessPaths = normalizeAccessPaths(userRow);
+
       return {
         ...userRow,
         initials: buildInitials(userName),
+        isExternal: inferIsExternal(userRow),
+        accessPaths,
+        pathCount: accessPaths.length,
         profileUrl: userRow.profileId
           ? `/lightning/setup/EnhancedProfiles/page?address=%2F${userRow.profileId}`
           : null,
@@ -183,6 +211,13 @@ export default class RecordAccessInspector extends LightningElement {
     return `${this.response.usersWithAccess || 0} users with ${this.accessModeLabel.toLowerCase()} access`;
   }
 
+  get shareObjectDisplayLabel() {
+    if (this.response.shareObjectAvailable && this.response.shareObjectApiName) {
+      return this.response.shareObjectApiName;
+    }
+    return 'Not available';
+  }
+
   get normalizedSearchTerm() {
     return (this.searchTerm || '').trim().toLowerCase();
   }
@@ -192,12 +227,22 @@ export default class RecordAccessInspector extends LightningElement {
       return [];
     }
 
+    const byScope = this.users.filter((userRow) => {
+      if (this.selectedUserScope === 'internal') {
+        return !userRow.isExternal;
+      }
+      if (this.selectedUserScope === 'external') {
+        return userRow.isExternal;
+      }
+      return true;
+    });
+
     const needle = this.normalizedSearchTerm;
     if (!needle) {
-      return this.users;
+      return byScope;
     }
 
-    return this.users.filter((userRow) => {
+    return byScope.filter((userRow) => {
       const haystack = [
         userRow.userName,
         userRow.loginName,
@@ -205,7 +250,7 @@ export default class RecordAccessInspector extends LightningElement {
         userRow.roleName,
         userRow.userType,
         userRow.maxAccessLevel,
-        ...(Array.isArray(userRow.accessPaths) ? userRow.accessPaths : [])
+        ...(Array.isArray(userRow.accessPaths) ? userRow.accessPaths.map((path) => path.label) : [])
       ]
         .filter(Boolean)
         .join(' ')
@@ -270,10 +315,6 @@ export default class RecordAccessInspector extends LightningElement {
     return String(this.pageSize);
   }
 
-  get permissionSetHomeUrl() {
-    return '/lightning/setup/PermSets/home';
-  }
-
   get showUsersGrid() {
     return this.totalFilteredUsers > 0;
   }
@@ -304,4 +345,34 @@ function reduceErrors(error) {
     return [error?.body?.message || error?.message || 'Unknown error'];
   }
   return error.body.map((err) => err.message);
+}
+
+function normalizeAccessPaths(userRow) {
+  const rawPaths = Array.isArray(userRow?.accessPaths) ? userRow.accessPaths : [];
+  return rawPaths
+    .map((path, index) => {
+      if (typeof path === 'string') {
+        return {
+          key: `${userRow.userId || 'u'}-path-${index}`,
+          label: path,
+          url: null
+        };
+      }
+
+      return {
+        key: path?.key || `${userRow.userId || 'u'}-path-${index}`,
+        label: path?.label || '',
+        url: path?.url || null
+      };
+    })
+    .filter((path) => path.label);
+}
+
+function inferIsExternal(userRow) {
+  if (typeof userRow?.isExternal === 'boolean') {
+    return userRow.isExternal;
+  }
+
+  const userType = (userRow?.userType || '').toLowerCase();
+  return /portal|customer|partner|guest|community/.test(userType);
 }

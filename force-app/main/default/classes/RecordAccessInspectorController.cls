@@ -34,6 +34,7 @@ public with sharing class RecordAccessInspectorController {
         Name,
         Username,
         UserType,
+        IsPortalEnabled,
         ProfileId,
         Profile.Name,
         UserRoleId,
@@ -66,6 +67,7 @@ public with sharing class RecordAccessInspectorController {
       response.notes
     );
     response.shareObjectApiName = shareInsights.shareObjectApiName;
+    response.shareObjectAvailable = shareInsights.shareObjectAvailable;
     response.directShareCount = shareInsights.directShareCount;
     response.groupShareCount = shareInsights.groupShareCount;
 
@@ -99,7 +101,7 @@ public with sharing class RecordAccessInspectorController {
         continue;
       }
 
-      List<String> orderedPaths = buildAccessPaths(
+      List<AccessPath> orderedPaths = buildAccessPaths(
         candidate,
         ownerId,
         sharingModelInfo,
@@ -109,7 +111,12 @@ public with sharing class RecordAccessInspectorController {
       );
 
       if (orderedPaths.isEmpty()) {
-        orderedPaths.add('Implicit access path (record hierarchy, enterprise sharing, or system-level grant).');
+        addPath(
+          orderedPaths,
+          new Set<String>(),
+          'Implicit access path (record hierarchy, enterprise sharing, or system-level grant).',
+          null
+        );
       }
 
       UserAccessRow row = new UserAccessRow();
@@ -120,6 +127,7 @@ public with sharing class RecordAccessInspectorController {
       row.profileId = candidate.ProfileId;
       row.roleName = candidate.UserRole != null ? candidate.UserRole.Name : null;
       row.userType = candidate.UserType;
+      row.isExternal = candidate.IsPortalEnabled || candidate.UserType == 'Guest';
       row.hasRead = hasRead;
       row.hasEdit = hasEdit;
       row.hasDelete = hasDelete;
@@ -321,18 +329,18 @@ public with sharing class RecordAccessInspectorController {
     }
 
     Map<Id, Id> profilePermissionSetByProfileId = new Map<Id, Id>();
-    Map<Id, String> sourceNameByPermissionSetId = new Map<Id, String>();
-    Map<Id, String> profileSourceLabelByProfileId = new Map<Id, String>();
+    Map<Id, PermissionSource> sourceByPermissionSetId = new Map<Id, PermissionSource>();
+    Map<Id, String> profileNameByProfileId = new Map<Id, String>();
 
     for (User userRow : users) {
-      if (userRow.ProfileId == null || profileSourceLabelByProfileId.containsKey(userRow.ProfileId)) {
+      if (userRow.ProfileId == null || profileNameByProfileId.containsKey(userRow.ProfileId)) {
         continue;
       }
 
       String profileName = (userRow.Profile != null && !String.isBlank(userRow.Profile.Name))
         ? userRow.Profile.Name
         : 'Unknown Profile';
-      profileSourceLabelByProfileId.put(userRow.ProfileId, 'Profile: ' + profileName);
+      profileNameByProfileId.put(userRow.ProfileId, profileName);
     }
 
     if (!profileIds.isEmpty()) {
@@ -343,10 +351,15 @@ public with sharing class RecordAccessInspectorController {
         WHERE ProfileId IN :profileIds
       ]) {
         profilePermissionSetByProfileId.put(profileSet.ProfileId, profileSet.Id);
-        String sourceLabel = profileSourceLabelByProfileId.containsKey(profileSet.ProfileId)
-          ? profileSourceLabelByProfileId.get(profileSet.ProfileId)
-          : 'Profile: Unknown Profile';
-        sourceNameByPermissionSetId.put(profileSet.Id, sourceLabel);
+        PermissionSource source = new PermissionSource();
+        source.key = 'profile:' + String.valueOf(profileSet.ProfileId);
+        source.label = 'Profile: ' + (
+          profileNameByProfileId.containsKey(profileSet.ProfileId)
+            ? profileNameByProfileId.get(profileSet.ProfileId)
+            : 'Unknown Profile'
+        );
+        source.url = buildProfileSetupUrl(profileSet.ProfileId);
+        sourceByPermissionSetId.put(profileSet.Id, source);
       }
     }
 
@@ -361,11 +374,23 @@ public with sharing class RecordAccessInspectorController {
         WHERE Id IN :assignedPermissionSetIds
       ]) {
         String label = String.isBlank(assignedSet.Label) ? assignedSet.Name : assignedSet.Label;
+        PermissionSource source = new PermissionSource();
 
-        String sourcePrefix = assignedSet.IsOwnedByProfile
-          ? 'Profile: '
-          : 'Permission Set: ';
-        sourceNameByPermissionSetId.put(assignedSet.Id, sourcePrefix + label);
+        if (assignedSet.IsOwnedByProfile && assignedSet.ProfileId != null) {
+          source.key = 'profile:' + String.valueOf(assignedSet.ProfileId);
+          source.label = 'Profile: ' + (
+            profileNameByProfileId.containsKey(assignedSet.ProfileId)
+              ? profileNameByProfileId.get(assignedSet.ProfileId)
+              : label
+          );
+          source.url = buildProfileSetupUrl(assignedSet.ProfileId);
+        } else {
+          source.key = 'permissionset:' + String.valueOf(assignedSet.Id);
+          source.label = 'Permission Set: ' + label;
+          source.url = buildPermissionSetSetupUrl(assignedSet.Id);
+        }
+
+        sourceByPermissionSetId.put(assignedSet.Id, source);
       }
     }
 
@@ -403,7 +428,7 @@ public with sharing class RecordAccessInspectorController {
       if (profilePermissionSetId != null && flagsByPermissionSetId.containsKey(profilePermissionSetId)) {
         snapshot.applyFlags(
           flagsByPermissionSetId.get(profilePermissionSetId),
-          sourceNameByPermissionSetId.get(profilePermissionSetId)
+          sourceByPermissionSetId.get(profilePermissionSetId)
         );
       }
 
@@ -412,7 +437,7 @@ public with sharing class RecordAccessInspectorController {
           if (flagsByPermissionSetId.containsKey(assignedPermissionSetId)) {
             snapshot.applyFlags(
               flagsByPermissionSetId.get(assignedPermissionSetId),
-              sourceNameByPermissionSetId.get(assignedPermissionSetId)
+              sourceByPermissionSetId.get(assignedPermissionSetId)
             );
           }
         }
@@ -436,13 +461,17 @@ public with sharing class RecordAccessInspectorController {
     insights.groupShareReasonsByUser = new Map<Id, List<String>>();
 
     String shareObjectApiName = getShareObjectApiName(objectApiName);
-    insights.shareObjectApiName = shareObjectApiName;
 
     Map<String, Schema.SObjectType> globalDescribe = Schema.getGlobalDescribe();
     if (!globalDescribe.containsKey(shareObjectApiName)) {
-      notes.add('No share object was found for ' + objectApiName + '.');
+      notes.add(
+        'No standalone share object is available for ' + objectApiName +
+        '. This is common when sharing is controlled by parent.'
+      );
       return insights;
     }
+    insights.shareObjectApiName = shareObjectApiName;
+    insights.shareObjectAvailable = true;
 
     Schema.DescribeSObjectResult shareDescribe = globalDescribe.get(shareObjectApiName).getDescribe();
     Map<String, Schema.SObjectField> shareFields = shareDescribe.fields.getMap();
@@ -825,7 +854,7 @@ public with sharing class RecordAccessInspectorController {
     }
   }
 
-  private static List<String> buildAccessPaths(
+  private static List<AccessPath> buildAccessPaths(
     User candidate,
     Id ownerId,
     SharingModelInfo sharingModelInfo,
@@ -833,11 +862,11 @@ public with sharing class RecordAccessInspectorController {
     ShareInsights shareInsights,
     String mode
   ) {
-    List<String> paths = new List<String>();
+    List<AccessPath> paths = new List<AccessPath>();
     Set<String> seenPaths = new Set<String>();
 
     if (ownerId != null && ownerId == candidate.Id) {
-      addPath(paths, seenPaths, 'Record owner.');
+      addPath(paths, seenPaths, 'Record owner.', null);
     }
 
     appendPermissionPaths(paths, seenPaths, permissionSnapshot, mode);
@@ -847,19 +876,20 @@ public with sharing class RecordAccessInspectorController {
         paths,
         seenPaths,
         'Org-wide default grants ' + humanizeAccessMode(mode).toLowerCase() +
-        ' (' + friendlySharingModelName(sharingModelInfo.internalModel) + ').'
+        ' (' + friendlySharingModelName(sharingModelInfo.internalModel) + ').',
+        null
       );
     }
 
     if (shareInsights.directShareReasonsByUser.containsKey(candidate.Id)) {
       for (String reason : shareInsights.directShareReasonsByUser.get(candidate.Id)) {
-        addPath(paths, seenPaths, reason);
+        addPath(paths, seenPaths, reason, null);
       }
     }
 
     if (shareInsights.groupShareReasonsByUser.containsKey(candidate.Id)) {
       for (String reason : shareInsights.groupShareReasonsByUser.get(candidate.Id)) {
-        addPath(paths, seenPaths, reason);
+        addPath(paths, seenPaths, reason, null);
       }
     }
 
@@ -867,29 +897,31 @@ public with sharing class RecordAccessInspectorController {
   }
 
   private static void appendPermissionPaths(
-    List<String> paths,
+    List<AccessPath> paths,
     Set<String> seenPaths,
     PermissionSnapshot permissionSnapshot,
     String mode
   ) {
     if (mode == 'read') {
-      if (!permissionSnapshot.readSources.isEmpty()) {
+      for (PermissionSource source : sortPermissionSources(permissionSnapshot.readSourcesByKey)) {
         addPath(
           paths,
           seenPaths,
-          'Object Read permission via ' + summarizeSources(permissionSnapshot.readSources) + '.'
+          'Object Read permission via ' + source.label + '.',
+          source.url
         );
       }
       if (permissionSnapshot.canViewAllRecords || permissionSnapshot.canModifyAllRecords) {
-        Set<String> allRecordSources = new Set<String>();
-        allRecordSources.addAll(permissionSnapshot.viewAllSources);
-        allRecordSources.addAll(permissionSnapshot.modifyAllSources);
-        if (!allRecordSources.isEmpty()) {
+        Map<String, PermissionSource> allRecordSourcesByKey = combinePermissionSourceMaps(
+          permissionSnapshot.viewAllSourcesByKey,
+          permissionSnapshot.modifyAllSourcesByKey
+        );
+        for (PermissionSource source : sortPermissionSources(allRecordSourcesByKey)) {
           addPath(
             paths,
             seenPaths,
-            'Global record visibility via ' + summarizeSources(allRecordSources) + '. '
-              + '(View All / Modify All Records)'
+            'Global record visibility via ' + source.label + '. (View All / Modify All Records)',
+            source.url
           );
         }
       }
@@ -897,55 +929,83 @@ public with sharing class RecordAccessInspectorController {
     }
 
     if (mode == 'edit') {
-      if (!permissionSnapshot.editSources.isEmpty()) {
+      for (PermissionSource source : sortPermissionSources(permissionSnapshot.editSourcesByKey)) {
         addPath(
           paths,
           seenPaths,
-          'Object Edit permission via ' + summarizeSources(permissionSnapshot.editSources) + '.'
+          'Object Edit permission via ' + source.label + '.',
+          source.url
         );
       }
-      if (permissionSnapshot.canModifyAllRecords && !permissionSnapshot.modifyAllSources.isEmpty()) {
-        addPath(
-          paths,
-          seenPaths,
-          'Modify All Records via ' + summarizeSources(permissionSnapshot.modifyAllSources) + '.'
-        );
+      if (permissionSnapshot.canModifyAllRecords) {
+        for (PermissionSource source : sortPermissionSources(permissionSnapshot.modifyAllSourcesByKey)) {
+          addPath(
+            paths,
+            seenPaths,
+            'Modify All Records via ' + source.label + '.',
+            source.url
+          );
+        }
       }
       return;
     }
 
-    if (!permissionSnapshot.deleteSources.isEmpty()) {
+    for (PermissionSource source : sortPermissionSources(permissionSnapshot.deleteSourcesByKey)) {
       addPath(
         paths,
         seenPaths,
-        'Object Delete permission via ' + summarizeSources(permissionSnapshot.deleteSources) + '.'
+        'Object Delete permission via ' + source.label + '.',
+        source.url
       );
     }
-    if (permissionSnapshot.canModifyAllRecords && !permissionSnapshot.modifyAllSources.isEmpty()) {
-      addPath(
-        paths,
-        seenPaths,
-        'Modify All Records via ' + summarizeSources(permissionSnapshot.modifyAllSources) + '.'
-      );
+    if (permissionSnapshot.canModifyAllRecords) {
+      for (PermissionSource source : sortPermissionSources(permissionSnapshot.modifyAllSourcesByKey)) {
+        addPath(
+          paths,
+          seenPaths,
+          'Modify All Records via ' + source.label + '.',
+          source.url
+        );
+      }
     }
   }
 
-  private static String summarizeSources(Set<String> sources) {
-    List<String> sortedSources = new List<String>();
-    sortedSources.addAll(sources);
-    sortedSources.sort();
+  private static Map<String, PermissionSource> combinePermissionSourceMaps(
+    Map<String, PermissionSource> first,
+    Map<String, PermissionSource> second
+  ) {
+    Map<String, PermissionSource> combined = new Map<String, PermissionSource>();
+    if (first != null) {
+      combined.putAll(first);
+    }
+    if (second != null) {
+      combined.putAll(second);
+    }
+    return combined;
+  }
 
-    Integer maxToShow = 3;
-    List<String> shownSources = new List<String>();
-    for (Integer index = 0; index < sortedSources.size() && index < maxToShow; index++) {
-      shownSources.add(sortedSources[index]);
+  private static List<PermissionSource> sortPermissionSources(Map<String, PermissionSource> sourceMap) {
+    List<PermissionSource> sortedSources = new List<PermissionSource>();
+    if (sourceMap == null || sourceMap.isEmpty()) {
+      return sortedSources;
     }
 
-    String summary = String.join(shownSources, ', ');
-    if (sortedSources.size() > maxToShow) {
-      summary += ' +' + (sortedSources.size() - maxToShow) + ' more';
+    Map<String, String> sortingTokenToKey = new Map<String, String>();
+    List<String> sortingTokens = new List<String>();
+
+    for (String key : sourceMap.keySet()) {
+      PermissionSource source = sourceMap.get(key);
+      String label = source == null || String.isBlank(source.label) ? key : source.label;
+      String token = label.toLowerCase() + '|' + key;
+      sortingTokenToKey.put(token, key);
+      sortingTokens.add(token);
     }
-    return summary;
+
+    sortingTokens.sort();
+    for (String token : sortingTokens) {
+      sortedSources.add(sourceMap.get(sortingTokenToKey.get(token)));
+    }
+    return sortedSources;
   }
 
   private static Boolean owdGrantsMode(String internalSharingModel, String mode) {
@@ -1071,6 +1131,20 @@ public with sharing class RecordAccessInspectorController {
     return objectApiName + 'Share';
   }
 
+  private static String buildProfileSetupUrl(Id profileId) {
+    if (profileId == null) {
+      return null;
+    }
+    return '/lightning/setup/EnhancedProfiles/page?address=%2F' + String.valueOf(profileId);
+  }
+
+  private static String buildPermissionSetSetupUrl(Id permissionSetId) {
+    if (permissionSetId == null) {
+      return null;
+    }
+    return '/lightning/setup/PermSets/page?address=%2F' + String.valueOf(permissionSetId);
+  }
+
   private static String humanizeAccessMode(String mode) {
     if (mode == 'edit') {
       return 'Write';
@@ -1093,12 +1167,22 @@ public with sharing class RecordAccessInspectorController {
     return recordId != null && recordId.getSObjectType() == UserRole.SObjectType;
   }
 
-  private static void addPath(List<String> paths, Set<String> seenPaths, String value) {
-    if (String.isBlank(value) || seenPaths.contains(value)) {
+  private static void addPath(List<AccessPath> paths, Set<String> seenPaths, String value, String url) {
+    if (String.isBlank(value)) {
       return;
     }
-    paths.add(value);
-    seenPaths.add(value);
+
+    String dedupeKey = value + '|' + String.valueOf(url);
+    if (seenPaths.contains(dedupeKey)) {
+      return;
+    }
+
+    AccessPath path = new AccessPath();
+    path.key = dedupeKey;
+    path.label = value;
+    path.url = url;
+    paths.add(path);
+    seenPaths.add(dedupeKey);
   }
 
   private static void addReason(Map<Id, List<String>> mapById, Id keyId, String reason) {
@@ -1126,6 +1210,7 @@ public with sharing class RecordAccessInspectorController {
     @AuraEnabled public String internalSharingModel;
     @AuraEnabled public String externalSharingModel;
     @AuraEnabled public String shareObjectApiName;
+    @AuraEnabled public Boolean shareObjectAvailable;
     @AuraEnabled public Integer totalActiveUsers;
     @AuraEnabled public Integer scannedUsers;
     @AuraEnabled public Integer usersWithAccess;
@@ -1143,12 +1228,19 @@ public with sharing class RecordAccessInspectorController {
     @AuraEnabled public Id profileId;
     @AuraEnabled public String roleName;
     @AuraEnabled public String userType;
+    @AuraEnabled public Boolean isExternal;
     @AuraEnabled public Boolean hasRead;
     @AuraEnabled public Boolean hasEdit;
     @AuraEnabled public Boolean hasDelete;
     @AuraEnabled public String maxAccessLevel;
     @AuraEnabled public Integer pathCount;
-    @AuraEnabled public List<String> accessPaths;
+    @AuraEnabled public List<AccessPath> accessPaths;
+  }
+
+  public class AccessPath {
+    @AuraEnabled public String key;
+    @AuraEnabled public String label;
+    @AuraEnabled public String url;
   }
 
   private class PermissionFlags {
@@ -1166,48 +1258,51 @@ public with sharing class RecordAccessInspectorController {
     public Boolean canViewAllRecords = false;
     public Boolean canModifyAllRecords = false;
 
-    public Set<String> readSources = new Set<String>();
-    public Set<String> editSources = new Set<String>();
-    public Set<String> deleteSources = new Set<String>();
-    public Set<String> viewAllSources = new Set<String>();
-    public Set<String> modifyAllSources = new Set<String>();
+    public Map<String, PermissionSource> readSourcesByKey = new Map<String, PermissionSource>();
+    public Map<String, PermissionSource> editSourcesByKey = new Map<String, PermissionSource>();
+    public Map<String, PermissionSource> deleteSourcesByKey = new Map<String, PermissionSource>();
+    public Map<String, PermissionSource> viewAllSourcesByKey = new Map<String, PermissionSource>();
+    public Map<String, PermissionSource> modifyAllSourcesByKey = new Map<String, PermissionSource>();
 
-    public void applyFlags(PermissionFlags flags, String sourceName) {
+    public void applyFlags(PermissionFlags flags, PermissionSource source) {
       if (flags == null) {
         return;
       }
 
       if (flags.canRead) {
         canRead = true;
-        if (!String.isBlank(sourceName)) {
-          readSources.add(sourceName);
-        }
+        addSource(readSourcesByKey, source);
       }
       if (flags.canEdit) {
         canEdit = true;
-        if (!String.isBlank(sourceName)) {
-          editSources.add(sourceName);
-        }
+        addSource(editSourcesByKey, source);
       }
       if (flags.canDelete) {
         canDelete = true;
-        if (!String.isBlank(sourceName)) {
-          deleteSources.add(sourceName);
-        }
+        addSource(deleteSourcesByKey, source);
       }
       if (flags.canViewAll) {
         canViewAllRecords = true;
-        if (!String.isBlank(sourceName)) {
-          viewAllSources.add(sourceName);
-        }
+        addSource(viewAllSourcesByKey, source);
       }
       if (flags.canModifyAll) {
         canModifyAllRecords = true;
-        if (!String.isBlank(sourceName)) {
-          modifyAllSources.add(sourceName);
-        }
+        addSource(modifyAllSourcesByKey, source);
       }
     }
+
+    private void addSource(Map<String, PermissionSource> target, PermissionSource source) {
+      if (source == null || String.isBlank(source.key)) {
+        return;
+      }
+      target.put(source.key, source);
+    }
+  }
+
+  private class PermissionSource {
+    public String key;
+    public String label;
+    public String url;
   }
 
   private class SharingModelInfo {
@@ -1217,6 +1312,7 @@ public with sharing class RecordAccessInspectorController {
 
   private class ShareInsights {
     public String shareObjectApiName;
+    public Boolean shareObjectAvailable = false;
     public Integer directShareCount = 0;
     public Integer groupShareCount = 0;
     public Map<Id, List<String>> directShareReasonsByUser;
