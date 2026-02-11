@@ -1,0 +1,168 @@
+<template>
+  <section class="access-shell">
+    <template if:true={isLoading}>
+      <div class="state-card">
+        <lightning-spinner alternative-text="Loading record access" size="medium"></lightning-spinner>
+        <p class="state-text">Analyzing effective record access paths...</p>
+      </div>
+    </template>
+
+    <template if:true={errorMessage}>
+      <div class="state-card state-card--error">
+        <h2 class="state-title">Unable to load record access</h2>
+        <p class="state-text">{errorMessage}</p>
+      </div>
+    </template>
+
+    <template if:false={hasRecordContext}>
+      <div class="state-card">
+        <h2 class="state-title">Open this on a record page</h2>
+        <p class="state-text">This component inspects access for a specific record.</p>
+      </div>
+    </template>
+
+    <template if:true={showMainContent}>
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Record Access Inspector</p>
+          <h1 class="title">{response.objectLabel} Record</h1>
+          <p class="subtitle">{selectedCountLabel}</p>
+        </div>
+
+        <div class="mode-toggle" role="group" aria-label="Access mode selector">
+          <template for:each={modeButtons} for:item="mode">
+            <button
+              key={mode.value}
+              class={mode.className}
+              data-mode={mode.value}
+              onclick={handleModeChange}
+              type="button"
+            >
+              {mode.label}
+            </button>
+          </template>
+        </div>
+      </header>
+
+      <section class="stats-grid">
+        <article class="stat-card">
+          <p class="stat-label">Users Matched</p>
+          <p class="stat-value">{response.usersWithAccess}</p>
+        </article>
+        <article class="stat-card">
+          <p class="stat-label">Users Scanned</p>
+          <p class="stat-value">{response.scannedUsers}</p>
+        </article>
+        <article class="stat-card">
+          <p class="stat-label">Direct Shares</p>
+          <p class="stat-value">{response.directShareCount}</p>
+        </article>
+        <article class="stat-card">
+          <p class="stat-label">Group Shares</p>
+          <p class="stat-value">{response.groupShareCount}</p>
+        </article>
+      </section>
+
+      <section class="meta-strip">
+        <span class="meta-pill">Internal OWD: {response.internalSharingModel}</span>
+        <span class="meta-pill">External OWD: {response.externalSharingModel}</span>
+        <span class="meta-pill">Share Object: {response.shareObjectApiName}</span>
+      </section>
+
+      <template if:true={hasNotes}>
+        <section class="notes">
+          <template for:each={notes} for:item="note">
+            <p key={note} class="note-item">{note}</p>
+          </template>
+        </section>
+      </template>
+
+      <template if:true={hasUsers}>
+        <section class="toolbar">
+          <lightning-input
+            type="search"
+            label="Search users and paths"
+            placeholder="Search by user, profile, role, or access path"
+            value={searchTerm}
+            oninput={handleSearchInput}
+            class="toolbar__search"
+          ></lightning-input>
+
+          <lightning-combobox
+            label="Page size"
+            value={pageSizeValue}
+            options={pageSizeOptions}
+            onchange={handlePageSizeChange}
+            class="toolbar__size"
+          ></lightning-combobox>
+
+          <div class="toolbar__meta">
+            <p class="page-summary">{pageSummary}</p>
+            <div class="pager">
+              <button class="pager__button" type="button" onclick={handlePreviousPage} disabled={disablePreviousButton}>
+                Previous
+              </button>
+              <button class="pager__button" type="button" onclick={handleNextPage} disabled={disableNextButton}>
+                Next
+              </button>
+            </div>
+          </div>
+        </section>
+      </template>
+
+      <template if:true={showUsersGrid}>
+        <section class="users-grid">
+          <template for:each={pagedUsers} for:item="userRow">
+            <article key={userRow.userId} class="user-card">
+              <div class="user-head">
+                <div class="avatar">{userRow.initials}</div>
+                <div class="user-meta">
+                  <h3 class="user-name">{userRow.userName}</h3>
+                  <p class="user-line">
+                    <template if:true={userRow.profileUrl}>
+                      <a href={userRow.profileUrl} class="setup-link" target="_blank">{userRow.profileName}</a>
+                    </template>
+                    <template if:false={userRow.profileUrl}>
+                      <span>{userRow.profileName}</span>
+                    </template>
+                  </p>
+                  <p class="user-line">{userRow.roleName}</p>
+                  <p class="user-line">{userRow.userType} | Max: {userRow.maxAccessLevel}</p>
+                  <p class="user-line user-line--support">
+                    <a href={permissionSetHomeUrl} class="setup-link" target="_blank">Open Permission Sets</a>
+                  </p>
+                </div>
+                <div class="perm-strip">
+                  <template for:each={userRow.permissionBadges} for:item="badge">
+                    <span key={badge.key} class={badge.className} title={badge.title}>{badge.label}</span>
+                  </template>
+                </div>
+              </div>
+
+              <div class="path-header">Access Paths ({userRow.pathCount})</div>
+              <div class="path-wrap">
+                <template for:each={userRow.accessPaths} for:item="path">
+                  <span key={path} class="path-pill">{path}</span>
+                </template>
+              </div>
+            </article>
+          </template>
+        </section>
+      </template>
+
+      <template if:true={showFilterEmptyState}>
+        <div class="state-card">
+          <h2 class="state-title">No users match your search</h2>
+          <p class="state-text">Adjust the search text or page size to see matching users.</p>
+        </div>
+      </template>
+
+      <template if:true={showEmptyState}>
+        <div class="state-card">
+          <h2 class="state-title">No users matched this access level</h2>
+          <p class="state-text">Try a different toggle or verify sharing for this record.</p>
+        </div>
+      </template>
+    </template>
+  </section>
+</template>
