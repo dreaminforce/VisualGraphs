@@ -103,7 +103,8 @@
             label="Search users and paths"
             placeholder="Search by user, profile, role, or access path"
             value={searchTerm}
-            oninput={handleSearchInput}
+            onkeyup={handleSearchInput}
+            onchange={handleSearchInput}
             class="toolbar__search"
           ></lightning-input>
 
