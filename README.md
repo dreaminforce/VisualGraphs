@@ -45,8 +45,7 @@ Key capabilities:
 
 #### Demo Video Placeholder
 
-- `TODO: Add Record Access Inspector demo video link`
-- `Placeholder: <RECORD_ACCESS_INSPECTOR_VIDEO_URL>`
+https://github.com/user-attachments/assets/188b5549-72d6-4ec5-9806-294c6f98b7f4
 
 ---
 
