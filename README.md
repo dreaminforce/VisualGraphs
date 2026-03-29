@@ -4,12 +4,39 @@ Visual Graphs is a Salesforce DX project containing focused Lightning Web Compon
 
 ## What Is Included
 
-- `opportunityJourney`: timeline-style opportunity narrative
 - `recordAccessInspector`: record-access analysis for admins, including dense compact mode
+- `opportunityJourney`: timeline-style opportunity narrative
 
 ## Components
 
-### 1) Opportunity Journey
+### 1) Record Access Inspector
+
+Record Access Inspector shows who has access to a specific record and why, across supported sharing and permission paths.
+
+Key capabilities:
+- Read / Write / Delete toggle
+- Access path reasoning (owner, OWD, profile/permission set, share-derived paths)
+- Deep links in access paths for Profile and Permission Set sources (when available)
+- User profile link on each user card
+- Search, pagination, and page-size controls
+- User scope filtering: All / Internal / External
+- Compact admin layout designed for tight Lightning page regions
+- Dense tabular view so admins can scan many users without large cards consuming space
+- Grouped access-path summaries in compact mode instead of full-width path chips on every row
+- Expandable full-width detail row in compact mode so path details open only when needed
+- Inline badges and tooltips for compressed labels and grouped path categories
+
+- LWC: `recordAccessInspector`
+- Apex: `RecordAccessInspectorController`
+- Test: `RecordAccessInspectorControllerTest`
+
+#### Demo Video Placeholder
+
+https://github.com/user-attachments/assets/188b5549-72d6-4ec5-9806-294c6f98b7f4
+
+---
+
+### 2) Opportunity Journey
 
 Opportunity Journey renders a timeline-style narrative of an Opportunity, including:
 - Record creation context and key metadata
@@ -29,30 +56,6 @@ Opportunity Journey renders a timeline-style narrative of an Opportunity, includ
 
 - `TODO: Add Opportunity Journey demo video link`
 - `Placeholder: <OPPORTUNITY_JOURNEY_VIDEO_URL>`
-
----
-
-### 2) Record Access Inspector
-
-Record Access Inspector shows who has access to a specific record and why, across supported sharing and permission paths.
-
-Key capabilities:
-- Read / Write / Delete toggle
-- Access path reasoning (owner, OWD, profile/permission set, share-derived paths)
-- Deep links in access paths for Profile and Permission Set sources (when available)
-- User profile link on each user card
-- Search, pagination, and page-size controls
-- User scope filtering: All / Internal / External
-- Compact admin layout for tighter record pages
-- Grouped access-path summaries with expandable detail rows in compact mode
-
-- LWC: `recordAccessInspector`
-- Apex: `RecordAccessInspectorController`
-- Test: `RecordAccessInspectorControllerTest`
-
-#### Demo Video Placeholder
-
-https://github.com/user-attachments/assets/188b5549-72d6-4ec5-9806-294c6f98b7f4
 
 ---
 
