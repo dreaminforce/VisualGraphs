@@ -9,6 +9,13 @@
   </targets>
   <targetConfigs>
     <targetConfig targets="lightning__RecordPage">
+      <property
+        name="compactLayout"
+        type="Boolean"
+        label="Compact layout"
+        description="Renders the same access details in a dense admin-focused layout."
+        default="false"
+      />
       <supportedFormFactors>
         <supportedFormFactor type="Large" />
         <supportedFormFactor type="Small" />

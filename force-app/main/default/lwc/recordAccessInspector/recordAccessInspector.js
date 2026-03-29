@@ -7,11 +7,20 @@ const ACCESS_MODES = [
   { value: 'delete', label: 'Delete' }
 ];
 const USER_SCOPE_MODES = [
-  { value: 'all', label: 'All Users' },
-  { value: 'internal', label: 'Internal' },
-  { value: 'external', label: 'External' }
+  { value: 'all', label: 'All', title: 'Show all users' },
+  { value: 'internal', label: 'Internal', title: 'Show internal users only' },
+  { value: 'external', label: 'External', title: 'Show external users only' }
 ];
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
+const PATH_GROUP_CONFIG = [
+  { key: 'owner', label: 'Ownership', shortLabel: 'O' },
+  { key: 'object', label: 'Object Grants', shortLabel: 'P' },
+  { key: 'owd', label: 'OWD', shortLabel: 'W' },
+  { key: 'direct', label: 'Direct Shares', shortLabel: 'D' },
+  { key: 'group', label: 'Group Shares', shortLabel: 'G' },
+  { key: 'implicit', label: 'Implicit', shortLabel: 'I' },
+  { key: 'other', label: 'Other', shortLabel: '?' }
+];
 
 const EMPTY_RESPONSE = {
   objectApiName: '',
@@ -33,12 +42,15 @@ const EMPTY_RESPONSE = {
 export default class RecordAccessInspector extends LightningElement {
   @api recordId;
   @api objectApiName;
+  @api compactLayout = false;
 
   selectedMode = 'read';
   selectedUserScope = 'all';
   searchTerm = '';
   pageSize = 25;
   currentPage = 1;
+  expandedUserId;
+  expandedPathGroupKey;
   isLoading = true;
   errorMessage;
   response = { ...EMPTY_RESPONSE };
@@ -48,6 +60,7 @@ export default class RecordAccessInspector extends LightningElement {
     if (!this.recordId) {
       this.isLoading = false;
       this.errorMessage = undefined;
+      this.resetExpandedPathState();
       this.response = { ...EMPTY_RESPONSE };
       return;
     }
@@ -62,10 +75,12 @@ export default class RecordAccessInspector extends LightningElement {
       this.errorMessage = undefined;
       this.isLoading = false;
       this.currentPage = 1;
+      this.resetExpandedPathState();
       return;
     }
 
     if (error) {
+      this.resetExpandedPathState();
       this.response = { ...EMPTY_RESPONSE };
       this.errorMessage = reduceErrors(error).join(', ');
       this.isLoading = false;
@@ -82,6 +97,7 @@ export default class RecordAccessInspector extends LightningElement {
     this.isLoading = true;
     this.selectedMode = mode;
     this.currentPage = 1;
+    this.resetExpandedPathState();
   }
 
   handleUserScopeChange(event) {
@@ -91,17 +107,20 @@ export default class RecordAccessInspector extends LightningElement {
     }
     this.selectedUserScope = nextScope;
     this.currentPage = 1;
+    this.resetExpandedPathState();
   }
 
   handleSearchInput(event) {
     this.searchTerm = event.target.value || '';
     this.currentPage = 1;
+    this.resetExpandedPathState();
   }
 
   handlePageSizeChange(event) {
-    const nextSize = Number(event.detail.value);
+    const nextSize = Number(event.detail?.value || event.target?.value);
     this.pageSize = Number.isNaN(nextSize) ? 25 : nextSize;
     this.currentPage = 1;
+    this.resetExpandedPathState();
   }
 
   handlePreviousPage() {
@@ -109,6 +128,7 @@ export default class RecordAccessInspector extends LightningElement {
       return;
     }
     this.currentPage -= 1;
+    this.resetExpandedPathState();
   }
 
   handleNextPage() {
@@ -116,6 +136,54 @@ export default class RecordAccessInspector extends LightningElement {
       return;
     }
     this.currentPage += 1;
+    this.resetExpandedPathState();
+  }
+
+  handlePathDetailToggle(event) {
+    const userId = event.currentTarget.dataset.userId;
+    if (!userId) {
+      return;
+    }
+
+    if (this.expandedUserId === userId) {
+      this.resetExpandedPathState();
+      return;
+    }
+
+    this.expandedUserId = userId;
+    this.expandedPathGroupKey = undefined;
+  }
+
+  handlePathSummaryClick(event) {
+    const userId = event.currentTarget.dataset.userId;
+    const groupKey = event.currentTarget.dataset.groupKey;
+
+    if (!userId || !groupKey) {
+      return;
+    }
+
+    if (this.expandedUserId === userId && this.expandedPathGroupKey === groupKey) {
+      this.expandedPathGroupKey = undefined;
+      return;
+    }
+
+    this.expandedUserId = userId;
+    this.expandedPathGroupKey = groupKey;
+  }
+
+  handleShowAllPathGroups(event) {
+    const userId = event.currentTarget.dataset.userId;
+    if (!userId) {
+      return;
+    }
+
+    this.expandedUserId = userId;
+    this.expandedPathGroupKey = undefined;
+  }
+
+  resetExpandedPathState() {
+    this.expandedUserId = undefined;
+    this.expandedPathGroupKey = undefined;
   }
 
   get modeButtons() {
@@ -123,6 +191,7 @@ export default class RecordAccessInspector extends LightningElement {
       const isSelected = mode.value === this.selectedMode;
       return {
         ...mode,
+        title: `Show users with ${mode.label.toLowerCase()} access`,
         className: `mode-button${isSelected ? ' mode-button--active' : ''}`
       };
     });
@@ -133,6 +202,53 @@ export default class RecordAccessInspector extends LightningElement {
       ...scope,
       className: `scope-button${scope.value === this.selectedUserScope ? ' scope-button--active' : ''}`
     }));
+  }
+
+  get compactStats() {
+    return [
+      {
+        key: 'matched',
+        label: 'Match',
+        value: this.response.usersWithAccess,
+        title: 'Users matched'
+      },
+      {
+        key: 'scanned',
+        label: 'Scan',
+        value: this.response.scannedUsers,
+        title: 'Users scanned'
+      },
+      {
+        key: 'direct',
+        label: 'Dir',
+        value: this.response.directShareCount,
+        title: 'Direct shares'
+      },
+      {
+        key: 'group',
+        label: 'Grp',
+        value: this.response.groupShareCount,
+        title: 'Group shares'
+      },
+      {
+        key: 'internalOwd',
+        label: 'Int',
+        value: this.response.internalSharingModel,
+        title: 'Internal OWD'
+      },
+      {
+        key: 'externalOwd',
+        label: 'Ext',
+        value: this.response.externalSharingModel,
+        title: 'External OWD'
+      },
+      {
+        key: 'shareObject',
+        label: 'Share',
+        value: this.shareObjectDisplayLabel,
+        title: 'Share object'
+      }
+    ];
   }
 
   get accessModeLabel() {
@@ -147,6 +263,18 @@ export default class RecordAccessInspector extends LightningElement {
 
   get hasRecordContext() {
     return Boolean(this.recordId);
+  }
+
+  get isCompactLayout() {
+    return this.compactLayout === true || this.compactLayout === 'true';
+  }
+
+  get shellClassName() {
+    return `access-shell${this.isCompactLayout ? ' access-shell--compact' : ''}`;
+  }
+
+  get formFieldVariant() {
+    return this.isCompactLayout ? 'label-hidden' : 'standard';
   }
 
   get showMainContent() {
@@ -165,6 +293,9 @@ export default class RecordAccessInspector extends LightningElement {
     return this.response.users.map((userRow) => {
       const userName = userRow.userName || 'Unknown User';
       const accessPaths = normalizeAccessPaths(userRow);
+      const pathGroups = buildPathGroups(userRow.userId, accessPaths);
+      const isExpanded = userRow.userId === this.expandedUserId;
+      const activePathGroupKey = isExpanded ? this.expandedPathGroupKey : undefined;
 
       return {
         ...userRow,
@@ -172,6 +303,21 @@ export default class RecordAccessInspector extends LightningElement {
         isExternal: inferIsExternal(userRow),
         accessPaths,
         pathCount: accessPaths.length,
+        isExpanded,
+        hasActivePathGroup: Boolean(activePathGroupKey),
+        detailRowKey: `${userRow.userId}-details`,
+        pathToggleLabel: isExpanded ? 'Hide' : 'More',
+        visiblePathGroups: buildVisiblePathGroups(pathGroups, activePathGroupKey),
+        pathSummaryBadges: pathGroups.map((group) => ({
+          key: `${userRow.userId}-${group.groupKey}`,
+          groupKey: group.groupKey,
+          shortLabel: group.shortLabel,
+          count: group.count,
+          title: `${group.label}: ${group.count}`,
+          className: `path-summary-badge path-summary-badge--${group.groupKey}${
+            isExpanded && activePathGroupKey === group.groupKey ? ' path-summary-badge--active' : ''
+          }`
+        })),
         profileUrl: userRow.profileId
           ? `/lightning/setup/EnhancedProfiles/page?address=%2F${userRow.profileId}`
           : null,
@@ -375,4 +521,70 @@ function inferIsExternal(userRow) {
 
   const userType = (userRow?.userType || '').toLowerCase();
   return /portal|customer|partner|guest|community/.test(userType);
+}
+
+function buildPathGroups(userId, accessPaths) {
+  const groupsByKey = new Map();
+
+  accessPaths.forEach((path) => {
+    const config = classifyPathGroup(path?.label);
+    if (!groupsByKey.has(config.key)) {
+      groupsByKey.set(config.key, {
+        key: `${userId || 'u'}-${config.key}`,
+        groupKey: config.key,
+        label: config.label,
+        shortLabel: config.shortLabel,
+        count: 0,
+        paths: [],
+        className: `path-group path-group--${config.key}`
+      });
+    }
+
+    const group = groupsByKey.get(config.key);
+    group.count += 1;
+    group.paths.push(path);
+  });
+
+  return PATH_GROUP_CONFIG.map((config) => groupsByKey.get(config.key)).filter(Boolean);
+}
+
+function buildVisiblePathGroups(pathGroups, activePathGroupKey) {
+  if (!activePathGroupKey) {
+    return pathGroups;
+  }
+
+  const activeGroups = pathGroups.filter((group) => group.groupKey === activePathGroupKey);
+  if (!activeGroups.length) {
+    return pathGroups;
+  }
+
+  return activeGroups;
+}
+
+function classifyPathGroup(label) {
+  const normalizedLabel = (label || '').toLowerCase();
+
+  if (normalizedLabel.startsWith('record owner')) {
+    return PATH_GROUP_CONFIG[0];
+  }
+  if (
+    normalizedLabel.startsWith('object ') ||
+    normalizedLabel.startsWith('global record visibility via') ||
+    normalizedLabel.startsWith('modify all records via')
+  ) {
+    return PATH_GROUP_CONFIG[1];
+  }
+  if (normalizedLabel.startsWith('org-wide default grants')) {
+    return PATH_GROUP_CONFIG[2];
+  }
+  if (normalizedLabel.startsWith('direct share:')) {
+    return PATH_GROUP_CONFIG[3];
+  }
+  if (normalizedLabel.startsWith('group share via')) {
+    return PATH_GROUP_CONFIG[4];
+  }
+  if (normalizedLabel.startsWith('implicit access path')) {
+    return PATH_GROUP_CONFIG[5];
+  }
+  return PATH_GROUP_CONFIG[6];
 }

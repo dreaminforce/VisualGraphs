@@ -1,6 +1,11 @@
 # Visual Graphs
 
-Visual Graphs is a collection of polished Salesforce Lightning Web Components (LWC) for narrative analytics and access visibility.
+Visual Graphs is a Salesforce DX project containing focused Lightning Web Components for narrative analytics and record-access visibility.
+
+## What Is Included
+
+- `opportunityJourney`: timeline-style opportunity narrative
+- `recordAccessInspector`: record-access analysis for admins, including dense compact mode
 
 ## Components
 
@@ -38,6 +43,8 @@ Key capabilities:
 - User profile link on each user card
 - Search, pagination, and page-size controls
 - User scope filtering: All / Internal / External
+- Compact admin layout for tighter record pages
+- Grouped access-path summaries with expandable detail rows in compact mode
 
 - LWC: `recordAccessInspector`
 - Apex: `RecordAccessInspectorController`
@@ -73,3 +80,7 @@ sf apex run test --tests RecordAccessInspectorControllerTest --result-format hum
 - Opportunity stage timeline depends on Opportunity history tracking for `StageName`.
 - Email highlights depend on available `EmailMessage` data.
 - Some objects (for example, `ControlledByParent`) may not expose a standalone share object; the UI handles this and labels it accordingly.
+
+## License
+
+This project is licensed under the MIT License. See `LICENSE`.

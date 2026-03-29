@@ -1,5 +1,5 @@
 <template>
-  <section class="access-shell">
+  <section class={shellClassName}>
     <template if:true={isLoading}>
       <div class="state-card">
         <lightning-spinner alternative-text="Loading record access" size="medium"></lightning-spinner>
@@ -22,54 +22,136 @@
     </template>
 
     <template if:true={showMainContent}>
-      <header class="hero">
-        <div>
-          <p class="eyebrow">Record Access Inspector</p>
-          <h1 class="title">{response.objectLabel} Record</h1>
-          <p class="subtitle">{selectedCountLabel}</p>
-        </div>
+      <template if:false={isCompactLayout}>
+        <header class="hero">
+          <div>
+            <p class="eyebrow">Record Access Inspector</p>
+            <h1 class="title">{response.objectLabel} Record</h1>
+            <p class="subtitle">{selectedCountLabel}</p>
+          </div>
 
-        <div class="mode-toggle" role="group" aria-label="Access mode selector">
-          <template for:each={modeButtons} for:item="mode">
-            <button
-              key={mode.value}
-              class={mode.className}
-              data-mode={mode.value}
-              onclick={handleModeChange}
-              type="button"
-            >
-              {mode.label}
-            </button>
+          <div class="mode-toggle" role="group" aria-label="Access mode selector">
+            <template for:each={modeButtons} for:item="mode">
+              <button
+                key={mode.value}
+                class={mode.className}
+                data-mode={mode.value}
+                onclick={handleModeChange}
+                title={mode.title}
+                type="button"
+              >
+                {mode.label}
+              </button>
+            </template>
+          </div>
+        </header>
+
+        <section class="stats-grid">
+          <article class="stat-card">
+            <p class="stat-label">Users Matched</p>
+            <p class="stat-value">{response.usersWithAccess}</p>
+          </article>
+          <article class="stat-card">
+            <p class="stat-label">Users Scanned</p>
+            <p class="stat-value">{response.scannedUsers}</p>
+          </article>
+          <article class="stat-card">
+            <p class="stat-label">Direct Shares</p>
+            <p class="stat-value">{response.directShareCount}</p>
+          </article>
+          <article class="stat-card">
+            <p class="stat-label">Group Shares</p>
+            <p class="stat-value">{response.groupShareCount}</p>
+          </article>
+        </section>
+
+        <section class="meta-strip">
+          <span class="meta-pill">Internal OWD: {response.internalSharingModel}</span>
+          <span class="meta-pill">External OWD: {response.externalSharingModel}</span>
+          <span class="meta-pill">Share Object: {shareObjectDisplayLabel}</span>
+        </section>
+      </template>
+
+      <template if:true={isCompactLayout}>
+        <section class="compact-panel">
+          <div class="compact-topline">
+            <div class="compact-headline">
+              <span class="compact-title">{response.objectLabel}</span>
+              <span class="compact-subtitle">{selectedCountLabel}</span>
+            </div>
+
+            <div class="mode-toggle mode-toggle--compact" role="group" aria-label="Access mode selector">
+              <template for:each={modeButtons} for:item="mode">
+                <button
+                  key={mode.value}
+                  class={mode.className}
+                  data-mode={mode.value}
+                  onclick={handleModeChange}
+                  title={mode.title}
+                  type="button"
+                >
+                  {mode.label}
+                </button>
+              </template>
+            </div>
+          </div>
+
+          <div class="compact-summary">
+            <template for:each={compactStats} for:item="stat">
+              <span key={stat.key} class="compact-stat" title={stat.title}>
+                {stat.label} <strong>{stat.value}</strong>
+              </span>
+            </template>
+          </div>
+
+          <template if:true={hasUsers}>
+            <div class="compact-toolbar">
+              <div class="scope-toggle scope-toggle--compact" role="group" aria-label="User scope selector">
+                <template for:each={userScopeButtons} for:item="scope">
+                  <button
+                    key={scope.value}
+                    class={scope.className}
+                    data-scope={scope.value}
+                    onclick={handleUserScopeChange}
+                    title={scope.title}
+                    type="button"
+                  >
+                    {scope.label}
+                  </button>
+                </template>
+              </div>
+
+              <input
+                class="compact-search"
+                type="search"
+                placeholder="Search user, profile, role, path"
+                value={searchTerm}
+                onkeyup={handleSearchInput}
+                onchange={handleSearchInput}
+              />
+
+              <select class="compact-select" value={pageSizeValue} onchange={handlePageSizeChange}>
+                <template for:each={pageSizeOptions} for:item="sizeOption">
+                  <option key={sizeOption.value} value={sizeOption.value}>{sizeOption.label}</option>
+                </template>
+              </select>
+
+              <div class="compact-pager">
+                <span class="compact-page-summary">{pageSummary}</span>
+                <button class="pager__button" type="button" onclick={handlePreviousPage} disabled={disablePreviousButton}>
+                  Prev
+                </button>
+                <button class="pager__button" type="button" onclick={handleNextPage} disabled={disableNextButton}>
+                  Next
+                </button>
+              </div>
+            </div>
           </template>
-        </div>
-      </header>
-
-      <section class="stats-grid">
-        <article class="stat-card">
-          <p class="stat-label">Users Matched</p>
-          <p class="stat-value">{response.usersWithAccess}</p>
-        </article>
-        <article class="stat-card">
-          <p class="stat-label">Users Scanned</p>
-          <p class="stat-value">{response.scannedUsers}</p>
-        </article>
-        <article class="stat-card">
-          <p class="stat-label">Direct Shares</p>
-          <p class="stat-value">{response.directShareCount}</p>
-        </article>
-        <article class="stat-card">
-          <p class="stat-label">Group Shares</p>
-          <p class="stat-value">{response.groupShareCount}</p>
-        </article>
-      </section>
-
-      <section class="meta-strip">
-        <span class="meta-pill">Internal OWD: {response.internalSharingModel}</span>
-        <span class="meta-pill">External OWD: {response.externalSharingModel}</span>
-        <span class="meta-pill">Share Object: {shareObjectDisplayLabel}</span>
-      </section>
+        </section>
+      </template>
 
       <template if:true={hasUsers}>
+        <template if:false={isCompactLayout}>
         <section class="scope-row">
           <span class="scope-row__label">User Scope</span>
           <div class="scope-toggle" role="group" aria-label="User scope selector">
@@ -79,6 +161,7 @@
                 class={scope.className}
                 data-scope={scope.value}
                 onclick={handleUserScopeChange}
+                title={scope.title}
                 type="button"
               >
                 {scope.label}
@@ -86,6 +169,7 @@
             </template>
           </div>
         </section>
+        </template>
       </template>
 
       <template if:true={hasNotes}>
@@ -97,6 +181,7 @@
       </template>
 
       <template if:true={hasUsers}>
+        <template if:false={isCompactLayout}>
         <section class="toolbar">
           <lightning-input
             type="search"
@@ -106,6 +191,7 @@
             onkeyup={handleSearchInput}
             onchange={handleSearchInput}
             class="toolbar__search"
+            variant={formFieldVariant}
           ></lightning-input>
 
           <lightning-combobox
@@ -114,6 +200,7 @@
             options={pageSizeOptions}
             onchange={handlePageSizeChange}
             class="toolbar__size"
+            variant={formFieldVariant}
           ></lightning-combobox>
 
           <div class="toolbar__meta">
@@ -128,50 +215,188 @@
             </div>
           </div>
         </section>
+        </template>
       </template>
 
       <template if:true={showUsersGrid}>
-        <section class="users-grid">
-          <template for:each={pagedUsers} for:item="userRow">
-            <article key={userRow.userId} class="user-card">
-              <div class="user-head">
-                <div class="avatar">{userRow.initials}</div>
-                <div class="user-meta">
-                  <h3 class="user-name">{userRow.userName}</h3>
-                  <p class="user-line">
-                    <template if:true={userRow.profileUrl}>
-                      <a href={userRow.profileUrl} class="setup-link" target="_blank">{userRow.profileName}</a>
+        <template if:false={isCompactLayout}>
+          <section class="users-grid">
+            <template for:each={pagedUsers} for:item="userRow">
+              <article key={userRow.userId} class="user-card">
+                <div class="user-head">
+                  <div class="avatar">{userRow.initials}</div>
+                  <div class="user-meta">
+                    <h3 class="user-name">{userRow.userName}</h3>
+                    <p class="user-line">
+                      <template if:true={userRow.profileUrl}>
+                        <a href={userRow.profileUrl} class="setup-link" target="_blank">{userRow.profileName}</a>
+                      </template>
+                      <template if:false={userRow.profileUrl}>
+                        <span>{userRow.profileName}</span>
+                      </template>
+                    </p>
+                    <p class="user-line">{userRow.roleName}</p>
+                    <p class="user-line">{userRow.userType} | Max: {userRow.maxAccessLevel}</p>
+                  </div>
+                  <div class="perm-strip">
+                    <template for:each={userRow.permissionBadges} for:item="badge">
+                      <span key={badge.key} class={badge.className} title={badge.title}>{badge.label}</span>
                     </template>
-                    <template if:false={userRow.profileUrl}>
-                      <span>{userRow.profileName}</span>
-                    </template>
-                  </p>
-                  <p class="user-line">{userRow.roleName}</p>
-                  <p class="user-line">{userRow.userType} | Max: {userRow.maxAccessLevel}</p>
+                  </div>
                 </div>
-                <div class="perm-strip">
-                  <template for:each={userRow.permissionBadges} for:item="badge">
-                    <span key={badge.key} class={badge.className} title={badge.title}>{badge.label}</span>
-                  </template>
-                </div>
-              </div>
 
-              <div class="path-header">Access Paths ({userRow.pathCount})</div>
-              <div class="path-wrap">
-                <template for:each={userRow.accessPaths} for:item="path">
-                  <template if:true={path.url}>
-                    <a key={path.key} href={path.url} class="path-pill path-pill--link" target="_blank">
-                      {path.label}
-                    </a>
+                <div class="path-header">Access Paths ({userRow.pathCount})</div>
+                <div class="path-wrap">
+                  <template for:each={userRow.accessPaths} for:item="path">
+                    <template if:true={path.url}>
+                      <a key={path.key} href={path.url} class="path-pill path-pill--link" target="_blank">
+                        {path.label}
+                      </a>
+                    </template>
+                    <template if:false={path.url}>
+                      <span key={path.key} class="path-pill">{path.label}</span>
+                    </template>
                   </template>
-                  <template if:false={path.url}>
-                    <span key={path.key} class="path-pill">{path.label}</span>
+                </div>
+              </article>
+            </template>
+          </section>
+        </template>
+
+        <template if:true={isCompactLayout}>
+          <section class="compact-table-shell">
+            <div class="compact-table-scroll">
+              <table class="compact-table">
+                <thead>
+                  <tr>
+                    <th scope="col">User</th>
+                    <th scope="col">Access Context</th>
+                    <th scope="col">Perm</th>
+                    <th scope="col">Access Paths</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <template for:each={pagedUsers} for:item="userRow">
+                    <tr key={userRow.userId}>
+                      <td class="compact-table__cell compact-table__cell--user">
+                        <p class="compact-user-name">{userRow.userName}</p>
+                        <p class="compact-user-line">{userRow.loginName}</p>
+                      </td>
+                      <td class="compact-table__cell compact-table__cell--context">
+                        <p class="compact-user-line">
+                          <template if:true={userRow.profileUrl}>
+                            <a href={userRow.profileUrl} class="setup-link" target="_blank">{userRow.profileName}</a>
+                          </template>
+                          <template if:false={userRow.profileUrl}>
+                            <span>{userRow.profileName}</span>
+                          </template>
+                          <span class="compact-divider">|</span>
+                          <span>{userRow.roleName}</span>
+                        </p>
+                        <p class="compact-user-line">{userRow.userType} | Max {userRow.maxAccessLevel}</p>
+                      </td>
+                      <td class="compact-table__cell compact-table__cell--perm">
+                        <div class="perm-strip perm-strip--compact">
+                          <template for:each={userRow.permissionBadges} for:item="badge">
+                            <span key={badge.key} class={badge.className} title={badge.title}>{badge.label}</span>
+                          </template>
+                        </div>
+                      </td>
+                      <td class="compact-table__cell compact-table__cell--paths">
+                        <div class="path-summary">
+                          <div class="path-summary__badges">
+                            <template for:each={userRow.pathSummaryBadges} for:item="group">
+                              <button
+                                key={group.key}
+                                class={group.className}
+                                title={group.title}
+                                data-user-id={userRow.userId}
+                                data-group-key={group.groupKey}
+                                onclick={handlePathSummaryClick}
+                                type="button"
+                              >
+                                <span class="path-summary-badge__label">{group.shortLabel}</span>
+                                <span class="path-summary-badge__count">{group.count}</span>
+                              </button>
+                            </template>
+                          </div>
+
+                          <button
+                            class="path-toggle"
+                            data-user-id={userRow.userId}
+                            onclick={handlePathDetailToggle}
+                            title="Show all access path details"
+                            type="button"
+                          >
+                            {userRow.pathToggleLabel}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                    <template if:true={userRow.isExpanded}>
+                      <tr key={userRow.detailRowKey} class="compact-detail-row">
+                        <td colspan="4" class="compact-detail-row__cell">
+                          <section class="path-detail">
+                            <div class="path-detail__header">
+                              <p class="path-detail__title">Access path details</p>
+                              <div class="path-detail__actions">
+                                <template if:true={userRow.hasActivePathGroup}>
+                                  <button
+                                    class="path-detail__action"
+                                    data-user-id={userRow.userId}
+                                    onclick={handleShowAllPathGroups}
+                                    title="Show all access path groups"
+                                    type="button"
+                                  >
+                                    All paths
+                                  </button>
+                                </template>
+                                <button
+                                  class="path-detail__action"
+                                  data-user-id={userRow.userId}
+                                  onclick={handlePathDetailToggle}
+                                  title="Hide access path details"
+                                  type="button"
+                                >
+                                  Hide
+                                </button>
+                              </div>
+                            </div>
+
+                            <div class="path-detail__groups">
+                              <template for:each={userRow.visiblePathGroups} for:item="group">
+                                <section key={group.key} class={group.className}>
+                                  <div class="path-group__header">
+                                    <span class="path-group__badge">{group.shortLabel}</span>
+                                    <p class="path-group__title">{group.label}</p>
+                                    <span class="path-group__count">{group.count}</span>
+                                  </div>
+
+                                  <div class="path-group__list">
+                                    <template for:each={group.paths} for:item="path">
+                                      <template if:true={path.url}>
+                                        <a key={path.key} href={path.url} class="path-detail-link" target="_blank">
+                                          {path.label}
+                                        </a>
+                                      </template>
+                                      <template if:false={path.url}>
+                                        <span key={path.key} class="path-detail-text">{path.label}</span>
+                                      </template>
+                                    </template>
+                                  </div>
+                                </section>
+                              </template>
+                            </div>
+                          </section>
+                        </td>
+                      </tr>
+                    </template>
                   </template>
-                </template>
-              </div>
-            </article>
-          </template>
-        </section>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </template>
       </template>
 
       <template if:true={showFilterEmptyState}>
