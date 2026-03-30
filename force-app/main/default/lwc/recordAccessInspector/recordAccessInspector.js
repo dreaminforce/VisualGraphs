@@ -43,6 +43,7 @@ export default class RecordAccessInspector extends LightningElement {
   @api recordId;
   @api objectApiName;
   @api compactLayout = false;
+  @api compactSize = 'normal';
 
   selectedMode = 'read';
   selectedUserScope = 'all';
@@ -269,8 +270,14 @@ export default class RecordAccessInspector extends LightningElement {
     return this.compactLayout === true || this.compactLayout === 'true';
   }
 
+  get isSmallCompactLayout() {
+    return this.isCompactLayout && this.compactSize === 'small';
+  }
+
   get shellClassName() {
-    return `access-shell${this.isCompactLayout ? ' access-shell--compact' : ''}`;
+    return `access-shell${this.isCompactLayout ? ' access-shell--compact' : ''}${
+      this.isSmallCompactLayout ? ' access-shell--compact-small' : ''
+    }`;
   }
 
   get formFieldVariant() {
@@ -457,8 +464,34 @@ export default class RecordAccessInspector extends LightningElement {
     }));
   }
 
+  get compactPageSizeOptions() {
+    return PAGE_SIZE_OPTIONS.map((size) => ({
+      label: `${size}/page`,
+      value: String(size)
+    }));
+  }
+
   get pageSizeValue() {
     return String(this.pageSize);
+  }
+
+  get compactToolbarPageSizeOptions() {
+    return this.isSmallCompactLayout ? this.compactPageSizeOptions : this.pageSizeOptions;
+  }
+
+  get compactPageSummary() {
+    if (!this.totalFilteredUsers) {
+      return '0';
+    }
+
+    const startIndex = (this.effectivePage - 1) * this.pageSize;
+    const startNumber = startIndex + 1;
+    const endNumber = Math.min(startIndex + this.pageSize, this.totalFilteredUsers);
+    return `${startNumber}-${endNumber} / ${this.totalFilteredUsers}`;
+  }
+
+  get compactToolbarPageSummary() {
+    return this.isSmallCompactLayout ? this.compactPageSummary : this.pageSummary;
   }
 
   get showUsersGrid() {

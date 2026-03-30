@@ -881,6 +881,208 @@
   text-decoration: underline;
 }
 
+.access-shell--compact-small .compact-toolbar {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  row-gap: 0.3rem;
+}
+
+.access-shell--compact-small .scope-toggle--compact {
+  grid-column: 1;
+  grid-row: 1;
+  width: fit-content;
+}
+
+.access-shell--compact-small .compact-search {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.access-shell--compact-small .compact-select {
+  grid-column: 1;
+  grid-row: 2;
+  min-width: 0;
+  width: 100%;
+}
+
+.access-shell--compact-small .compact-pager {
+  grid-column: 2;
+  grid-row: 2;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.access-shell--compact-small .compact-page-summary {
+  grid-column: 1;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.access-shell--compact-small .compact-table-scroll {
+  overflow: visible;
+}
+
+.access-shell--compact-small .compact-table {
+  min-width: 0;
+}
+
+.access-shell--compact-small .compact-table thead {
+  display: none;
+}
+
+.access-shell--compact-small .compact-table,
+.access-shell--compact-small .compact-table tbody {
+  display: block;
+  width: 100%;
+}
+
+.access-shell--compact-small .compact-table tbody {
+  display: grid;
+  gap: 0.28rem;
+  padding: 0.28rem;
+}
+
+.access-shell--compact-small .compact-table tbody tr {
+  display: block;
+}
+
+.access-shell--compact-small .compact-table tbody tr:not(.compact-detail-row) {
+  padding: 0.42rem 0.46rem;
+  border: 1px solid #e3e9ee;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.access-shell--compact-small .compact-table tbody td {
+  display: block;
+  width: auto;
+  padding: 0;
+  border: 0;
+}
+
+.access-shell--compact-small .compact-table tbody tr:not(.compact-detail-row) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'user perm'
+    'context context'
+    'paths paths';
+  gap: 0.26rem 0.45rem;
+}
+
+.access-shell--compact-small .compact-table__cell--user {
+  grid-area: user;
+  min-width: 0;
+}
+
+.access-shell--compact-small .compact-table__cell--context {
+  grid-area: context;
+  min-width: 0;
+}
+
+.access-shell--compact-small .compact-table__cell--perm {
+  grid-area: perm;
+  justify-self: end;
+}
+
+.access-shell--compact-small .compact-table__cell--paths {
+  grid-area: paths;
+  min-width: 0;
+}
+
+.access-shell--compact-small .compact-table__cell--context::before,
+.access-shell--compact-small .compact-table__cell--paths::before {
+  display: block;
+  margin-bottom: 0.12rem;
+  font-size: 0.54rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #5d707d;
+}
+
+.access-shell--compact-small .compact-table__cell--context::before {
+  content: 'Access Context';
+}
+
+.access-shell--compact-small .compact-table__cell--paths::before {
+  content: 'Access Paths';
+}
+
+.access-shell--compact-small .path-summary {
+  align-items: flex-start;
+  flex-direction: column;
+}
+
+.access-shell--compact-small .path-summary__badges {
+  width: 100%;
+}
+
+.access-shell--compact-small .path-toggle,
+.access-shell--compact-small .path-detail__action {
+  white-space: normal;
+}
+
+.access-shell--compact-small .path-toggle {
+  align-self: flex-start;
+}
+
+.access-shell--compact-small .compact-detail-row {
+  margin-top: -0.06rem;
+}
+
+.access-shell--compact-small .compact-detail-row__cell {
+  padding: 0;
+}
+
+.access-shell--compact-small .compact-detail-row .path-detail {
+  border: 1px solid #e3e9ee;
+  border-radius: 8px;
+  background: #fbfdff;
+}
+
+.access-shell--compact-small .path-detail__header {
+  align-items: flex-start;
+  flex-direction: column;
+}
+
+.access-shell--compact-small .path-detail__groups {
+  grid-template-columns: 1fr;
+}
+
+@media (max-width: 640px) {
+  .access-shell--compact-small .compact-toolbar {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  .access-shell--compact-small .scope-toggle--compact,
+  .access-shell--compact-small .compact-search,
+  .access-shell--compact-small .compact-select,
+  .access-shell--compact-small .compact-pager {
+    grid-column: 1;
+  }
+
+  .access-shell--compact-small .scope-toggle--compact {
+    grid-row: auto;
+  }
+
+  .access-shell--compact-small .compact-search {
+    grid-row: auto;
+  }
+
+  .access-shell--compact-small .compact-select {
+    grid-row: auto;
+  }
+
+  .access-shell--compact-small .compact-pager {
+    grid-row: auto;
+  }
+}
+
 @media (max-width: 780px) {
   .hero {
     grid-template-columns: 1fr;

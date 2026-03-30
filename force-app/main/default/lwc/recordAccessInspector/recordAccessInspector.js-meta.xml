@@ -16,6 +16,14 @@
         description="Renders the same access details in a dense admin-focused layout."
         default="false"
       />
+      <property
+        name="compactSize"
+        type="String"
+        label="Compact size"
+        description="Choose the compact layout density."
+        default="normal"
+        datasource="normal,small"
+      />
       <supportedFormFactors>
         <supportedFormFactor type="Large" />
         <supportedFormFactor type="Small" />

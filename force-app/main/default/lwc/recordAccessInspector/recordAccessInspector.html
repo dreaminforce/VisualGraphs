@@ -131,13 +131,13 @@
               />
 
               <select class="compact-select" value={pageSizeValue} onchange={handlePageSizeChange}>
-                <template for:each={pageSizeOptions} for:item="sizeOption">
+                <template for:each={compactToolbarPageSizeOptions} for:item="sizeOption">
                   <option key={sizeOption.value} value={sizeOption.value}>{sizeOption.label}</option>
                 </template>
               </select>
 
               <div class="compact-pager">
-                <span class="compact-page-summary">{pageSummary}</span>
+                <span class="compact-page-summary">{compactToolbarPageSummary}</span>
                 <button class="pager__button" type="button" onclick={handlePreviousPage} disabled={disablePreviousButton}>
                   Prev
                 </button>
