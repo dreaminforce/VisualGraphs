@@ -283,17 +283,51 @@
                         <p class="compact-user-line">{userRow.loginName}</p>
                       </td>
                       <td class="compact-table__cell compact-table__cell--context">
-                        <p class="compact-user-line">
-                          <template if:true={userRow.profileUrl}>
-                            <a href={userRow.profileUrl} class="setup-link" target="_blank">{userRow.profileName}</a>
+                        <template if:true={isSmallCompactLayout}>
+                          <div class="compact-section-heading">
+                            <span class="compact-section-title">Access Context</span>
+                            <lightning-button-icon
+                              class="compact-section-toggle"
+                              icon-name={userRow.contextToggleIcon}
+                              alternative-text={userRow.contextToggleTitle}
+                              title={userRow.contextToggleTitle}
+                              data-user-id={userRow.userId}
+                              onclick={handleContextDetailToggle}
+                              size="x-small"
+                              variant="bare"
+                            ></lightning-button-icon>
+                          </div>
+
+                          <template if:true={userRow.isContextExpanded}>
+                            <div class="compact-section-body">
+                              <p class="compact-user-line">
+                                <template if:true={userRow.profileUrl}>
+                                  <a href={userRow.profileUrl} class="setup-link" target="_blank">{userRow.profileName}</a>
+                                </template>
+                                <template if:false={userRow.profileUrl}>
+                                  <span>{userRow.profileName}</span>
+                                </template>
+                                <span class="compact-divider">|</span>
+                                <span>{userRow.roleName}</span>
+                              </p>
+                              <p class="compact-user-line">{userRow.userType} | Max {userRow.maxAccessLevel}</p>
+                            </div>
                           </template>
-                          <template if:false={userRow.profileUrl}>
-                            <span>{userRow.profileName}</span>
-                          </template>
-                          <span class="compact-divider">|</span>
-                          <span>{userRow.roleName}</span>
-                        </p>
-                        <p class="compact-user-line">{userRow.userType} | Max {userRow.maxAccessLevel}</p>
+                        </template>
+
+                        <template if:false={isSmallCompactLayout}>
+                          <p class="compact-user-line">
+                            <template if:true={userRow.profileUrl}>
+                              <a href={userRow.profileUrl} class="setup-link" target="_blank">{userRow.profileName}</a>
+                            </template>
+                            <template if:false={userRow.profileUrl}>
+                              <span>{userRow.profileName}</span>
+                            </template>
+                            <span class="compact-divider">|</span>
+                            <span>{userRow.roleName}</span>
+                          </p>
+                          <p class="compact-user-line">{userRow.userType} | Max {userRow.maxAccessLevel}</p>
+                        </template>
                       </td>
                       <td class="compact-table__cell compact-table__cell--perm">
                         <div class="perm-strip perm-strip--compact">
@@ -303,34 +337,71 @@
                         </div>
                       </td>
                       <td class="compact-table__cell compact-table__cell--paths">
-                        <div class="path-summary">
-                          <div class="path-summary__badges">
-                            <template for:each={userRow.pathSummaryBadges} for:item="group">
-                              <button
-                                key={group.key}
-                                class={group.className}
-                                title={group.title}
-                                data-user-id={userRow.userId}
-                                data-group-key={group.groupKey}
-                                onclick={handlePathSummaryClick}
-                                type="button"
-                              >
-                                <span class="path-summary-badge__label">{group.shortLabel}</span>
-                                <span class="path-summary-badge__count">{group.count}</span>
-                              </button>
-                            </template>
+                        <template if:true={isSmallCompactLayout}>
+                          <div class="compact-section-heading">
+                            <span class="compact-section-title">Access Paths</span>
+                            <lightning-button-icon
+                              class="compact-section-toggle"
+                              icon-name={userRow.pathToggleIcon}
+                              alternative-text={userRow.pathToggleTitle}
+                              title={userRow.pathToggleTitle}
+                              data-user-id={userRow.userId}
+                              onclick={handlePathDetailToggle}
+                              size="x-small"
+                              variant="bare"
+                            ></lightning-button-icon>
                           </div>
 
-                          <button
-                            class="path-toggle"
-                            data-user-id={userRow.userId}
-                            onclick={handlePathDetailToggle}
-                            title="Show all access path details"
-                            type="button"
-                          >
-                            {userRow.pathToggleLabel}
-                          </button>
-                        </div>
+                          <div class="path-summary">
+                            <div class="path-summary__badges">
+                              <template for:each={userRow.pathSummaryBadges} for:item="group">
+                                <button
+                                  key={group.key}
+                                  class={group.className}
+                                  title={group.title}
+                                  data-user-id={userRow.userId}
+                                  data-group-key={group.groupKey}
+                                  onclick={handlePathSummaryClick}
+                                  type="button"
+                                >
+                                  <span class="path-summary-badge__label">{group.shortLabel}</span>
+                                  <span class="path-summary-badge__count">{group.count}</span>
+                                </button>
+                              </template>
+                            </div>
+                          </div>
+                        </template>
+
+                        <template if:false={isSmallCompactLayout}>
+                          <div class="path-summary">
+                            <div class="path-summary__badges">
+                              <template for:each={userRow.pathSummaryBadges} for:item="group">
+                                <button
+                                  key={group.key}
+                                  class={group.className}
+                                  title={group.title}
+                                  data-user-id={userRow.userId}
+                                  data-group-key={group.groupKey}
+                                  onclick={handlePathSummaryClick}
+                                  type="button"
+                                >
+                                  <span class="path-summary-badge__label">{group.shortLabel}</span>
+                                  <span class="path-summary-badge__count">{group.count}</span>
+                                </button>
+                              </template>
+                            </div>
+
+                            <button
+                              class="path-toggle"
+                              data-user-id={userRow.userId}
+                              onclick={handlePathDetailToggle}
+                              title="Show all access path details"
+                              type="button"
+                            >
+                              {userRow.pathToggleLabel}
+                            </button>
+                          </div>
+                        </template>
                       </td>
                     </tr>
                     <template if:true={userRow.isExpanded}>
@@ -351,15 +422,17 @@
                                     All paths
                                   </button>
                                 </template>
-                                <button
-                                  class="path-detail__action"
-                                  data-user-id={userRow.userId}
-                                  onclick={handlePathDetailToggle}
-                                  title="Hide access path details"
-                                  type="button"
-                                >
-                                  Hide
-                                </button>
+                                <template if:false={isSmallCompactLayout}>
+                                  <button
+                                    class="path-detail__action"
+                                    data-user-id={userRow.userId}
+                                    onclick={handlePathDetailToggle}
+                                    title="Hide access path details"
+                                    type="button"
+                                  >
+                                    Hide
+                                  </button>
+                                </template>
                               </div>
                             </div>
 

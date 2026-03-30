@@ -50,6 +50,7 @@ export default class RecordAccessInspector extends LightningElement {
   searchTerm = '';
   pageSize = 25;
   currentPage = 1;
+  expandedContextUserIds = [];
   expandedUserId;
   expandedPathGroupKey;
   isLoading = true;
@@ -61,7 +62,7 @@ export default class RecordAccessInspector extends LightningElement {
     if (!this.recordId) {
       this.isLoading = false;
       this.errorMessage = undefined;
-      this.resetExpandedPathState();
+      this.resetExpandedState();
       this.response = { ...EMPTY_RESPONSE };
       return;
     }
@@ -76,12 +77,12 @@ export default class RecordAccessInspector extends LightningElement {
       this.errorMessage = undefined;
       this.isLoading = false;
       this.currentPage = 1;
-      this.resetExpandedPathState();
+      this.resetExpandedState();
       return;
     }
 
     if (error) {
-      this.resetExpandedPathState();
+      this.resetExpandedState();
       this.response = { ...EMPTY_RESPONSE };
       this.errorMessage = reduceErrors(error).join(', ');
       this.isLoading = false;
@@ -98,7 +99,7 @@ export default class RecordAccessInspector extends LightningElement {
     this.isLoading = true;
     this.selectedMode = mode;
     this.currentPage = 1;
-    this.resetExpandedPathState();
+    this.resetExpandedState();
   }
 
   handleUserScopeChange(event) {
@@ -108,20 +109,20 @@ export default class RecordAccessInspector extends LightningElement {
     }
     this.selectedUserScope = nextScope;
     this.currentPage = 1;
-    this.resetExpandedPathState();
+    this.resetExpandedState();
   }
 
   handleSearchInput(event) {
     this.searchTerm = event.target.value || '';
     this.currentPage = 1;
-    this.resetExpandedPathState();
+    this.resetExpandedState();
   }
 
   handlePageSizeChange(event) {
     const nextSize = Number(event.detail?.value || event.target?.value);
     this.pageSize = Number.isNaN(nextSize) ? 25 : nextSize;
     this.currentPage = 1;
-    this.resetExpandedPathState();
+    this.resetExpandedState();
   }
 
   handlePreviousPage() {
@@ -129,7 +130,7 @@ export default class RecordAccessInspector extends LightningElement {
       return;
     }
     this.currentPage -= 1;
-    this.resetExpandedPathState();
+    this.resetExpandedState();
   }
 
   handleNextPage() {
@@ -137,7 +138,21 @@ export default class RecordAccessInspector extends LightningElement {
       return;
     }
     this.currentPage += 1;
-    this.resetExpandedPathState();
+    this.resetExpandedState();
+  }
+
+  handleContextDetailToggle(event) {
+    const userId = event.currentTarget.dataset.userId;
+    if (!userId) {
+      return;
+    }
+
+    if (this.expandedContextUserIds.includes(userId)) {
+      this.expandedContextUserIds = this.expandedContextUserIds.filter((value) => value !== userId);
+      return;
+    }
+
+    this.expandedContextUserIds = [...this.expandedContextUserIds, userId];
   }
 
   handlePathDetailToggle(event) {
@@ -147,7 +162,8 @@ export default class RecordAccessInspector extends LightningElement {
     }
 
     if (this.expandedUserId === userId) {
-      this.resetExpandedPathState();
+      this.expandedUserId = undefined;
+      this.expandedPathGroupKey = undefined;
       return;
     }
 
@@ -182,7 +198,8 @@ export default class RecordAccessInspector extends LightningElement {
     this.expandedPathGroupKey = undefined;
   }
 
-  resetExpandedPathState() {
+  resetExpandedState() {
+    this.expandedContextUserIds = [];
     this.expandedUserId = undefined;
     this.expandedPathGroupKey = undefined;
   }
@@ -302,6 +319,7 @@ export default class RecordAccessInspector extends LightningElement {
       const accessPaths = normalizeAccessPaths(userRow);
       const pathGroups = buildPathGroups(userRow.userId, accessPaths);
       const isExpanded = userRow.userId === this.expandedUserId;
+      const isContextExpanded = this.expandedContextUserIds.includes(userRow.userId);
       const activePathGroupKey = isExpanded ? this.expandedPathGroupKey : undefined;
 
       return {
@@ -310,10 +328,15 @@ export default class RecordAccessInspector extends LightningElement {
         isExternal: inferIsExternal(userRow),
         accessPaths,
         pathCount: accessPaths.length,
+        isContextExpanded,
         isExpanded,
         hasActivePathGroup: Boolean(activePathGroupKey),
         detailRowKey: `${userRow.userId}-details`,
         pathToggleLabel: isExpanded ? 'Hide' : 'More',
+        pathToggleIcon: isExpanded ? 'utility:chevrondown' : 'utility:chevronright',
+        pathToggleTitle: `${isExpanded ? 'Hide' : 'Show'} access path details`,
+        contextToggleIcon: isContextExpanded ? 'utility:chevrondown' : 'utility:chevronright',
+        contextToggleTitle: `${isContextExpanded ? 'Hide' : 'Show'} access context`,
         visiblePathGroups: buildVisiblePathGroups(pathGroups, activePathGroupKey),
         pathSummaryBadges: pathGroups.map((group) => ({
           key: `${userRow.userId}-${group.groupKey}`,

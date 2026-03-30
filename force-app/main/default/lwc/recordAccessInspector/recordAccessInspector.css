@@ -995,39 +995,50 @@
 
 .access-shell--compact-small .compact-table__cell--context::before,
 .access-shell--compact-small .compact-table__cell--paths::before {
-  display: block;
-  margin-bottom: 0.12rem;
-  font-size: 0.54rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: #5d707d;
-}
-
-.access-shell--compact-small .compact-table__cell--context::before {
-  content: 'Access Context';
-}
-
-.access-shell--compact-small .compact-table__cell--paths::before {
-  content: 'Access Paths';
+  display: none;
 }
 
 .access-shell--compact-small .path-summary {
   align-items: flex-start;
-  flex-direction: column;
+  justify-content: flex-start;
 }
 
 .access-shell--compact-small .path-summary__badges {
   width: 100%;
 }
 
+.access-shell--compact-small .compact-section-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.16rem;
+  margin-bottom: 0.08rem;
+}
+
+.access-shell--compact-small .compact-section-title {
+  font-size: 0.56rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #5d707d;
+}
+
+.access-shell--compact-small .compact-section-toggle {
+  --slds-c-button-color-background: transparent;
+  --slds-c-button-color-border: transparent;
+  --slds-c-button-radius-border: 999px;
+  --slds-c-button-text-color: #3b5b6b;
+  --slds-c-button-sizing-border: 0;
+  flex: none;
+}
+
+.access-shell--compact-small .compact-section-body {
+  display: grid;
+  gap: 0.08rem;
+}
+
 .access-shell--compact-small .path-toggle,
 .access-shell--compact-small .path-detail__action {
   white-space: normal;
-}
-
-.access-shell--compact-small .path-toggle {
-  align-self: flex-start;
 }
 
 .access-shell--compact-small .compact-detail-row {
@@ -1047,6 +1058,10 @@
 .access-shell--compact-small .path-detail__header {
   align-items: flex-start;
   flex-direction: column;
+}
+
+.access-shell--compact-small .path-detail__actions {
+  width: 100%;
 }
 
 .access-shell--compact-small .path-detail__groups {
