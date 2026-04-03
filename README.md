@@ -4,7 +4,7 @@ Visual Graphs is a Salesforce DX project containing focused Lightning Web Compon
 
 ## What Is Included
 
-- `recordAccessInspector`: record-access analysis for admins, including dense compact mode
+- `recordAccessInspector`: compact record-access analysis for admins, with normal and small compact layouts
 - `opportunityJourney`: timeline-style opportunity narrative
 
 ## Components
@@ -20,7 +20,7 @@ Key capabilities:
 - User profile link on each user card
 - Search, pagination, and page-size controls
 - User scope filtering: All / Internal / External
-- Compact admin layout designed for tight Lightning page regions
+- Compact-only admin layouts designed for tight Lightning page regions
 - Dense tabular view so admins can scan many users without large cards consuming space
 - Grouped access-path summaries in compact mode instead of full-width path chips on every row
 - Expandable full-width detail row in compact mode so path details open only when needed

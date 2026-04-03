@@ -283,22 +283,12 @@ export default class RecordAccessInspector extends LightningElement {
     return Boolean(this.recordId);
   }
 
-  get isCompactLayout() {
-    return this.compactLayout === true || this.compactLayout === 'true';
-  }
-
   get isSmallCompactLayout() {
-    return this.isCompactLayout && this.compactSize === 'small';
+    return this.compactSize === 'small';
   }
 
   get shellClassName() {
-    return `access-shell${this.isCompactLayout ? ' access-shell--compact' : ''}${
-      this.isSmallCompactLayout ? ' access-shell--compact-small' : ''
-    }`;
-  }
-
-  get formFieldVariant() {
-    return this.isCompactLayout ? 'label-hidden' : 'standard';
+    return `access-shell access-shell--compact${this.isSmallCompactLayout ? ' access-shell--compact-small' : ''}`;
   }
 
   get showMainContent() {
@@ -324,10 +314,8 @@ export default class RecordAccessInspector extends LightningElement {
 
       return {
         ...userRow,
-        initials: buildInitials(userName),
         isExternal: inferIsExternal(userRow),
         accessPaths,
-        pathCount: accessPaths.length,
         isContextExpanded,
         isExpanded,
         hasActivePathGroup: Boolean(activePathGroupKey),
@@ -528,18 +516,6 @@ export default class RecordAccessInspector extends LightningElement {
   get showEmptyState() {
     return !this.isLoading && !this.errorMessage && this.hasRecordContext && !this.hasUsers;
   }
-}
-
-function buildInitials(name) {
-  if (!name) {
-    return 'NA';
-  }
-
-  const parts = name.trim().split(/\s+/);
-  if (parts.length === 1) {
-    return parts[0].substring(0, 2).toUpperCase();
-  }
-  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
 }
 
 function reduceErrors(error) {

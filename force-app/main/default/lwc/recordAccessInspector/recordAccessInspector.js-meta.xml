@@ -12,15 +12,15 @@
       <property
         name="compactLayout"
         type="Boolean"
-        label="Compact layout"
-        description="Renders the same access details in a dense admin-focused layout."
-        default="false"
+        label="Legacy Layout Toggle (Ignored)"
+        description="Legacy property retained for existing Lightning pages. The component now always uses a compact layout."
+        default="true"
       />
       <property
         name="compactSize"
         type="String"
-        label="Compact size"
-        description="Choose the compact layout density."
+        label="Layout"
+        description="Choose between Compact Layout and Compact Small layout."
         default="normal"
         datasource="normal,small"
       />
