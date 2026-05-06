@@ -36,7 +36,7 @@ https://github.com/user-attachments/assets/188b5549-72d6-4ec5-9806-294c6f98b7f4
 
 ---
 
-### 2) Opportunity Journey
+### 2) Opportunity's Journey
 
 Opportunity Journey renders a timeline-style narrative of an Opportunity, including:
 - Record creation context and key metadata
